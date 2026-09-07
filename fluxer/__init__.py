@@ -1,4 +1,4 @@
-__version__ = "0.5.0"
+__version__ = "0.4.2"
 __title__ = "fluxer.py"
 __author__ = "Emil"
 __license__ = "MIT"
@@ -8,6 +8,17 @@ from .client import Bot, Client, when_mentioned_or, when_mentioned
 from .cog import Cog
 from .enums import ChannelType, GatewayCloseCode, GatewayOpcode, Intents, Permissions
 from .file import File
+from .fluxer_models import (
+    SearchAuthorType,
+    SearchContentType,
+    SearchEmbedType,
+    SearchIndexing,
+    SearchResponse,
+    SearchResult,
+    SearchScope,
+    SearchSortBy,
+    SearchSortOrder,
+)
 from .http import HTTPClient
 
 # Checks
@@ -88,6 +99,12 @@ __all__ = [
     "GatewayOpcode",
     "Intents",
     "Permissions",
+    "SearchAuthorType",
+    "SearchContentType",
+    "SearchEmbedType",
+    "SearchScope",
+    "SearchSortBy",
+    "SearchSortOrder",
     # Errors
     "BadRequest",
     "FluxerException",
@@ -111,6 +128,9 @@ __all__ = [
     "PartialMessage",
     "Reaction",
     "Role",
+    "SearchIndexing",
+    "SearchResponse",
+    "SearchResult",
     "User",
     "UserProfile",
     "VoiceState",

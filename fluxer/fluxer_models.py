@@ -1,7 +1,27 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+
+if TYPE_CHECKING:
+    from .models import Channel, Message
+
+
+SearchScope: TypeAlias = Literal[
+    "current",
+    "open_dms",
+    "all_dms",
+    "all_guilds",
+    "all",
+    "open_dms_and_all_guilds",
+]
+SearchAuthorType: TypeAlias = Literal["user", "bot", "webhook"]
+SearchContentType: TypeAlias = Literal[
+    "image", "sound", "video", "file", "sticker", "embed", "link", "poll", "snapshot"
+]
+SearchEmbedType: TypeAlias = Literal["image", "video", "sound", "article"]
+SearchSortBy: TypeAlias = Literal["timestamp", "relevance"]
+SearchSortOrder: TypeAlias = Literal["asc", "desc"]
 
 
 def _maybe_int(value: Any) -> int | None:
@@ -324,27 +344,79 @@ class FavoriteMeme:
 class SearchResult:
     """A Fluxer message search result page."""
 
-    messages: list[Any] = field(default_factory=list)
-    total: int | None = None
-    next_cursor: str | None = None
+    messages: list[Message] = field(default_factory=list)
+    channels: list[Channel] = field(default_factory=list)
+    total: int = 0
+    hits_per_page: int = 25
+    page: int = 1
+    cursor: list[str] | None = None
     raw_data: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def next_cursor(self) -> list[str] | None:
+        """Compatibility alias for :attr:`cursor`.
+
+        Fluxer does not accept this cursor for pagination; use ``page`` instead.
+        """
+        return self.cursor
 
     @classmethod
     def from_data(cls, data: dict[str, Any], http: Any | None = None) -> SearchResult:
-        from .models import Message
+        from .models import Channel, Message
 
         raw_messages = data.get("messages") or data.get("results") or []
+        raw_channels = data.get("channels") or []
+        channels = [
+            Channel.from_data(item, http)
+            for item in raw_channels
+            if isinstance(item, dict)
+        ]
+        channels_by_id = {channel.id: channel for channel in channels}
         messages = [
             Message.from_data(item.get("message", item), http)
             for item in raw_messages
             if isinstance(item, dict)
         ]
+        for message in messages:
+            message._channel = channels_by_id.get(message.channel_id)
+
+        total = data.get("total")
+        if total is None:
+            total = data.get("total_results", 0)
+        cursor = data.get("cursor")
         return cls(
             messages=messages,
-            total=_maybe_int(data.get("total") or data.get("total_results")),
-            next_cursor=data.get("next_cursor") or data.get("cursor"),
+            channels=channels,
+            total=_maybe_int(total) or 0,
+            hits_per_page=_maybe_int(data.get("hits_per_page")) or 25,
+            page=_maybe_int(data.get("page")) or 1,
+            cursor=[str(item) for item in cursor] if isinstance(cursor, list) else None,
             raw_data=data,
         )
+
+
+@dataclass(slots=True)
+class SearchIndexing:
+    """Indicates that Fluxer is preparing one or more message search indexes."""
+
+    indexing: Literal[True] = True
+    raw_data: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_data(cls, data: dict[str, Any]) -> SearchIndexing:
+        return cls(raw_data=data)
+
+
+SearchResponse: TypeAlias = SearchResult | SearchIndexing
+
+
+def parse_search_response(
+    data: dict[str, Any], http: Any | None = None
+) -> SearchResponse:
+    """Parse either successful body returned by message search."""
+    if data.get("indexing") is True:
+        return SearchIndexing.from_data(data)
+    return SearchResult.from_data(data, http)
 
 
 @dataclass(slots=True)

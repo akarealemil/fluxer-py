@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.5.0] - 2026-03-30
+## [0.5.0-alpha.1] (development) - 2026-03-30
+
+### Added
+
+- New API usage: message search
+
+## [0.5.0] (development) - 2026-03-30
 
 ### Added, Changed & Fixed
 

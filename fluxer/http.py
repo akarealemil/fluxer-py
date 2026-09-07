@@ -9,6 +9,14 @@ import aiohttp
 import json as json_mod
 
 from .errors import http_exception_from_status
+from .fluxer_models import (
+    SearchAuthorType,
+    SearchContentType,
+    SearchEmbedType,
+    SearchScope,
+    SearchSortBy,
+    SearchSortOrder,
+)
 
 log = logging.getLogger(__name__)
 
@@ -578,6 +586,114 @@ class HTTPClient:
         )
         payload = {"message_ids": [str(mid) for mid in message_ids]}
         await self.request(route, json=payload)
+
+    async def search_messages(
+        self,
+        *,
+        scope: SearchScope | None = None,
+        context_channel_id: int | str | None = None,
+        context_guild_id: int | str | None = None,
+        channel_ids: list[int | str] | None = None,
+        channel_id: list[int | str] | None = None,
+        hits_per_page: int | None = None,
+        page: int | None = None,
+        cursor: list[str] | None = None,
+        min_id: int | str | None = None,
+        max_id: int | str | None = None,
+        content: str | None = None,
+        contents: list[str] | None = None,
+        exact_phrases: list[str] | None = None,
+        exclude_channel_id: list[int | str] | None = None,
+        author_id: list[int | str] | None = None,
+        exclude_author_id: list[int | str] | None = None,
+        author_type: list[SearchAuthorType] | None = None,
+        exclude_author_type: list[SearchAuthorType] | None = None,
+        mentions: list[int | str] | None = None,
+        exclude_mentions: list[int | str] | None = None,
+        mention_everyone: bool | None = None,
+        pinned: bool | None = None,
+        has: list[SearchContentType] | None = None,
+        exclude_has: list[SearchContentType] | None = None,
+        embed_type: list[SearchEmbedType] | None = None,
+        exclude_embed_type: list[SearchEmbedType] | None = None,
+        embed_provider: list[str] | None = None,
+        exclude_embed_provider: list[str] | None = None,
+        link_hostname: list[str] | None = None,
+        exclude_link_hostname: list[str] | None = None,
+        attachment_filename: list[str] | None = None,
+        exclude_attachment_filename: list[str] | None = None,
+        attachment_extension: list[str] | None = None,
+        exclude_attachment_extension: list[str] | None = None,
+        sort_by: SearchSortBy | None = None,
+        sort_order: SearchSortOrder | None = None,
+        include_nsfw: bool | None = None,
+    ) -> dict[str, Any]:
+        """POST /search/messages - Search indexed Fluxer messages.
+
+        User-token clients may use every documented scope. Bot tokens are restricted
+        by Fluxer to ``current`` and must provide a guild or channel context. Pagination
+        uses ``page``; the API accepts but does not honour ``cursor``.
+        """
+        payload: dict[str, Any] = {}
+        values = {
+            "scope": scope,
+            "hits_per_page": hits_per_page,
+            "page": page,
+            "cursor": cursor,
+            "content": content,
+            "contents": contents,
+            "exact_phrases": exact_phrases,
+            "author_type": author_type,
+            "exclude_author_type": exclude_author_type,
+            "mention_everyone": mention_everyone,
+            "pinned": pinned,
+            "has": has,
+            "exclude_has": exclude_has,
+            "embed_type": embed_type,
+            "exclude_embed_type": exclude_embed_type,
+            "embed_provider": embed_provider,
+            "exclude_embed_provider": exclude_embed_provider,
+            "link_hostname": link_hostname,
+            "exclude_link_hostname": exclude_link_hostname,
+            "attachment_filename": attachment_filename,
+            "exclude_attachment_filename": exclude_attachment_filename,
+            "attachment_extension": attachment_extension,
+            "exclude_attachment_extension": exclude_attachment_extension,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "include_nsfw": include_nsfw,
+        }
+        payload.update(
+            {key: value for key, value in values.items() if value is not None}
+        )
+
+        scalar_ids = {
+            "context_channel_id": context_channel_id,
+            "context_guild_id": context_guild_id,
+            "min_id": min_id,
+            "max_id": max_id,
+        }
+        payload.update(
+            {key: str(value) for key, value in scalar_ids.items() if value is not None}
+        )
+
+        list_ids = {
+            "channel_ids": channel_ids,
+            "channel_id": channel_id,
+            "exclude_channel_id": exclude_channel_id,
+            "author_id": author_id,
+            "exclude_author_id": exclude_author_id,
+            "mentions": mentions,
+            "exclude_mentions": exclude_mentions,
+        }
+        payload.update(
+            {
+                key: [str(item) for item in value]
+                for key, value in list_ids.items()
+                if value is not None
+            }
+        )
+        return await self.request(self._route("POST", "/search/messages"), json=payload)
 
     # -- Pinned Messages --
     async def get_pinned_messages(

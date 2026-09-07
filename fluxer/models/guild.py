@@ -10,6 +10,15 @@ from fluxer.models.role import Role
 from fluxer.sticker import Sticker
 
 from ..utils import snowflake_to_datetime
+from ..fluxer_models import (
+    SearchAuthorType,
+    SearchContentType,
+    SearchEmbedType,
+    SearchResponse,
+    SearchSortBy,
+    SearchSortOrder,
+    parse_search_response,
+)
 
 if TYPE_CHECKING:
     from ..http import HTTPClient
@@ -348,6 +357,87 @@ class Guild:
             raise RuntimeError("Cannot clone sticker without HTTPClient")
         data = await self._http.clone_guild_sticker(self.id, **payload)
         return Sticker.from_data(data, self._http)
+
+    async def search_messages(
+        self,
+        *,
+        channel_ids: list[int | str] | None = None,
+        channel_id: list[int | str] | None = None,
+        hits_per_page: int | None = None,
+        page: int | None = None,
+        cursor: list[str] | None = None,
+        min_id: int | str | None = None,
+        max_id: int | str | None = None,
+        content: str | None = None,
+        contents: list[str] | None = None,
+        exact_phrases: list[str] | None = None,
+        exclude_channel_id: list[int | str] | None = None,
+        author_id: list[int | str] | None = None,
+        exclude_author_id: list[int | str] | None = None,
+        author_type: list[SearchAuthorType] | None = None,
+        exclude_author_type: list[SearchAuthorType] | None = None,
+        mentions: list[int | str] | None = None,
+        exclude_mentions: list[int | str] | None = None,
+        mention_everyone: bool | None = None,
+        pinned: bool | None = None,
+        has: list[SearchContentType] | None = None,
+        exclude_has: list[SearchContentType] | None = None,
+        embed_type: list[SearchEmbedType] | None = None,
+        exclude_embed_type: list[SearchEmbedType] | None = None,
+        embed_provider: list[str] | None = None,
+        exclude_embed_provider: list[str] | None = None,
+        link_hostname: list[str] | None = None,
+        exclude_link_hostname: list[str] | None = None,
+        attachment_filename: list[str] | None = None,
+        exclude_attachment_filename: list[str] | None = None,
+        attachment_extension: list[str] | None = None,
+        exclude_attachment_extension: list[str] | None = None,
+        sort_by: SearchSortBy | None = None,
+        sort_order: SearchSortOrder | None = None,
+        include_nsfw: bool | None = None,
+    ) -> SearchResponse:
+        """Search messages in this guild using Fluxer's bot-safe current scope."""
+        if not self._http:
+            raise RuntimeError("Cannot search messages without HTTPClient")
+        data = await self._http.search_messages(
+            scope="current",
+            context_guild_id=self.id,
+            channel_ids=channel_ids,
+            channel_id=channel_id,
+            hits_per_page=hits_per_page,
+            page=page,
+            cursor=cursor,
+            min_id=min_id,
+            max_id=max_id,
+            content=content,
+            contents=contents,
+            exact_phrases=exact_phrases,
+            exclude_channel_id=exclude_channel_id,
+            author_id=author_id,
+            exclude_author_id=exclude_author_id,
+            author_type=author_type,
+            exclude_author_type=exclude_author_type,
+            mentions=mentions,
+            exclude_mentions=exclude_mentions,
+            mention_everyone=mention_everyone,
+            pinned=pinned,
+            has=has,
+            exclude_has=exclude_has,
+            embed_type=embed_type,
+            exclude_embed_type=exclude_embed_type,
+            embed_provider=embed_provider,
+            exclude_embed_provider=exclude_embed_provider,
+            link_hostname=link_hostname,
+            exclude_link_hostname=exclude_link_hostname,
+            attachment_filename=attachment_filename,
+            exclude_attachment_filename=exclude_attachment_filename,
+            attachment_extension=attachment_extension,
+            exclude_attachment_extension=exclude_attachment_extension,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            include_nsfw=include_nsfw,
+        )
+        return parse_search_response(data, self._http)
 
     def __str__(self) -> str:
         return self.name or f"Guild({self.id})"
